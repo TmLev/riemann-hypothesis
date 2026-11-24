@@ -129,7 +129,7 @@ theorem exists_ne_zero (hT : SecTwistSt) : ∃ σ : H0 U.LG.L 1, ¬ ∀ j, σ.f 
   refine ⟨σ, fun h0 => hne ?_⟩
   let ρ := U.gen.inv.left
   have e : ρ ≫ U.gen.hom.left = 𝟙 _ := congrArg (fun q => q.left) U.gen.inv_hom_id
-  choose J hJ using fun χ : A.A.left ⟶ G.left => exists_chart hL (χ y)
+  choose J hJ using fun χ : A.A.left ⟶ G.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL (χ y)
   have m := Good.mem hJ (fun _ : Fin 1 => pullback.fst G.hom (jK R)) ρ
   have m' := Good.mem hJ (fun _ : PUnit => pullback.fst G.hom (jK R)) ρ
   have k := hs' _ ρ y i _ ((congrArg (fun q => q y ∈ A.L.U i) e).mpr hy) m'

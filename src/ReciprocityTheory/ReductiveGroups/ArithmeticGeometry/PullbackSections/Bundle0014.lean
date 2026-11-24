@@ -159,7 +159,7 @@ theorem symLift_move (hL₀ : L₀.IsLB) (hL₁ : L₁.IsLB) (w : LB.Iso L₁ (L
   obtain ⟨nu, gnu, hmn⟩ := exists_gen_move hL₀ hL₁ w ((isGen_iff w).1 hw) _ _ ![k, -k] (psiO hp τ hτ).left hcn nu₀ gnu₀
   refine ⟨θ, ⟨rfl, ?_, nu, gnu, ?_⟩, hm⟩
   · refine corr_of_val hL₁ fun y J hJ => ?_
-    choose J₀ hJ₀ using fun χ : (T ⊗ A).left ⟶ G.left => exists_chart hL₀ (χ y)
+    choose J₀ hJ₀ using fun χ : (T ⊗ A).left ⟶ G.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL₀ (χ y)
     have hG : Good L₀ y J₀ := hJ₀
     obtain ⟨g, hg⟩ : ∃ g : ℕ → ((T ⊗ A).left.presheaf.stalk y)ˣ, ∀ j, g j =
         gw w (translPt A (θ.pt ^ j)).left y (J₀ ((translPt A (θ.pt ^ j)).left ≫ φ)) (J (translPt A (θ.pt ^ j)).left) ^ k :=
@@ -178,7 +178,7 @@ theorem symLift_move (hL₀ : L₀.IsLB) (hL₁ : L₁.IsLB) (w : LB.Iso L₁ (L
     have gn : g n = g 0 := by rw [hg, hg, hxn, pow_zero]
     rwa [gn, div_self', _root_.one_mul] at c
   · refine corr_of_val hL₁ fun y J hJ => ?_
-    choose J₀ hJ₀ using fun χ : (T ⊗ A).left ⟶ G.left => exists_chart hL₀ (χ y)
+    choose J₀ hJ₀ using fun χ : (T ⊗ A).left ⟶ G.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL₀ (χ y)
     have hG : Good L₀ y J₀ := hJ₀
     have c := val_corr hG cnu₀ (psiO hp τ hτ).left
     rw [val_symGen θ₀ nu₀ _ y hG, val_one] at c

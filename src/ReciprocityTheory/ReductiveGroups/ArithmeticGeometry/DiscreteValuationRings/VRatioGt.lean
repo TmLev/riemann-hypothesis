@@ -99,7 +99,7 @@ theorem v_ratio_gt (hϖ : Irreducible ϖ) (hv : ValOver ϖ F v) {Q : D.toPre.X �
     ReciprocityTheory.ChartRestriction.G.H1.exists_const D.toPre.P.L hL (𝟙 _) hsurj _ (invGen_isGen _ _ _ _ hu) (fun U _ h => by
       simp only [zpow_neg, Finset.prod_inv_distrib]; rw [inv_eq_one]; exact hform1 U h)
   let z₀ : Spec (CommRingCat.of F) := default
-  choose J₀ hJ₀ using fun χ : (TF (R := V) F).left ⟶ D.toPre.P.A.left => exists_chart hL (χ z₀)
+  choose J₀ hJ₀ using fun χ : (TF (R := V) F).left ⟶ D.toPre.P.A.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL (χ z₀)
   have hG : Good D.toPre.P.L z₀ J₀ := hJ₀
   have h1 := ht _ (𝟙 _) z₀ J₀ hG
   have h2 := chain_val (𝟙 (TF (R := V) F)) hG p α

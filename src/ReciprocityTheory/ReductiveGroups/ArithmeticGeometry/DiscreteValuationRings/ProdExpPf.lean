@@ -121,7 +121,7 @@ theorem expandsAt_of_val (S : Finset D.toPre.X) (h : ∀ (y : (thickObj R I e G)
       (wv U e (𝟙 _) y (J (pGl U e)) jL ^ k).val * sv U k σ (fGl I G e) y jL =
         ∑ α ∈ S, sval (f α) (pGl U e) y J * (val (tG U e α) (𝟙 _) y J).val) : U.ExpandsAt e k σ f := by
   refine ⟨S, fun α hα j => fn_ext fun y hy => ?_, ?_⟩
-  · choose J hJ using fun ψ : (thickObj R I e G).left ⟶ D.toPre.P.A.left => exists_chart D.toPre.P.isLB (ψ y)
+  · choose J hJ using fun ψ : (thickObj R I e G).left ⟶ D.toPre.P.A.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart D.toPre.P.isLB (ψ y)
     refine (gs_pull (𝟙 _) _ y _ hy _).trans (Eq.trans ?_ (gs_zero (𝟙 _) y _ hy).symm)
     rw [Category.id_comp]
     exact (sec_trans (f α) _ y hy (Good.mem hJ _ _)).trans ((congrArg _ ((h y J hJ).1 α hα)).trans (mul_zero _))
@@ -325,7 +325,7 @@ theorem expandsAt_box' (P : UnifPowOf3 pD pA pG U' U) (k e : ℕ) (σ : Fin j �
   classical
   choose S hS using fun i => expandsAt_val U.toUnifPre e k (σ i) (f i) (hE i)
   refine expandsAt_of_val U'.toUnifPre e k σ' f' ((Fintype.piFinset S).map pD.xe.symm.toEquiv.toEmbedding) fun y J' hJ' => ?_
-  choose J hJ using fun ψ : (thickObj R I e G').left ⟶ D.toPre.P.A.left => exists_chart D.toPre.P.isLB (ψ y)
+  choose J hJ using fun ψ : (thickObj R I e G').left ⟶ D.toPre.P.A.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart D.toPre.P.isLB (ψ y)
   have hJ : Good D.toPre.P.L y J := hJ
   have hF := box_F P hJ hJ' hf'
   have hT := box_product_transition_identity P hJ hJ'
@@ -338,7 +338,7 @@ theorem expandsAt_box' (P : UnifPowOf3 pD pA pG U' U) (k e : ℕ) (σ : Fin j �
         pD.xe.symm_apply_apply α'⟩)
     exact (Units.mul_right_eq_zero _).1 ((hF α').trans (Finset.prod_eq_zero (Finset.mem_univ i)
       ((hS i _ (rhoE I pG e i) y J hJ).1 _ hi)))
-  · choose jL hL using fun i => exists_chart U.LG.isLB ((pG.pr i).left ((fGl I G' e) y))
+  · choose jL hL using fun i => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart U.LG.isLB ((pG.pr i).left ((fGl I G' e) y))
     have hL₁ : ∀ i, fGl I G e (rhoE I pG e i y) ∈ U.LG.L.U (jL i) := fun i =>
       (congrArg (fun g => g y ∈ U.LG.L.U (jL i)) (pullback.lift_fst _ _ _ :
         rhoE I pG e i ≫ fGl I G e = fGl I G' e ≫ (pG.pr i).left)).mpr (hL i)

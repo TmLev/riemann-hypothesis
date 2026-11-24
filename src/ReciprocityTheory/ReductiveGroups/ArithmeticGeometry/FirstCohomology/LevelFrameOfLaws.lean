@@ -214,7 +214,7 @@ theorem dvd_of_comb {ϖ : V} (hϖ : Irreducible ϖ) (D : DegPre V) (F : Type) [F
   have r₂ : r ≫ (DegPre.prB D F).left = spMap iL ≫ hU.fromSpec := pullback.lift_snd _ _ _
   have key : ((D.P.A.left.presheaf.map (homOfLE le).op).hom (σ.f j)) ⊗ₜ[V] (1 : F) =
       ∑ i, ((D.P.A.left.presheaf.map (homOfLE le).op).hom ((τ i).f j)) ⊗ₜ[V] b i := cst_ext fun z => by
-    choose J hJ using fun ψ : Sp (Γ(D.P.A.left, U) ⊗[V] F) ⟶ D.P.A.left => exists_chart D.P.isLB (ψ z)
+    choose J hJ using fun ψ : Sp (Γ(D.P.A.left, U) ⊗[V] F) ⟶ D.P.A.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart D.P.isLB (ψ z)
     have e := h _ r z J hJ
     rw [r₁, r₂] at e
     have hm : (spMap iL ≫ hU.fromSpec) z ∈ LB.wchart D.P.L φ j := le (hU.range_fromSpec.le ⟨spMap iL z, rfl⟩)
@@ -293,7 +293,7 @@ theorem levelFrame_of_laws (hL : Laws) : DvrLevelFrame := by
   refine exists_div_sec D.toPre.P.A.hom hϖ.ne_zero σ fun j y hy => ?_
   obtain ⟨x, rfl⟩ := (mulA D.toPre.P.A N).left.surjective y
   apply dvd_descend (mulA D.toPre.P.A N).left x
-  choose J hJ using fun ψ : D.toPre.P.A.left ⟶ D.toPre.P.A.left => exists_chart D.toPre.P.isLB (ψ x)
+  choose J hJ using fun ψ : D.toPre.P.A.left ⟶ D.toPre.P.A.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart D.toPre.P.isLB (ψ x)
   have m₁ := Good.mem hJ (D.toPre.famφB (star a • χ)) (oa.onB.act (star a)).left
   have d₁ := map_dvd ((oa.onB.act (star a)).left.stalkMap x).hom (div₁ _ _ m₁)
   rw [cst_stalkMap, Over.w] at d₁

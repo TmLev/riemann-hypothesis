@@ -212,7 +212,7 @@ theorem phiPow_core (hG : GlobalFnsSt) {k : ℕ} (p : QkPt D F k)
   have hconst : ∀ α, a α = a 0 := by
     intro α
     refine fn_ext fun z _ => ?_
-    choose I hI using fun χ : (TF (R := R) F).left ⟶ D.P.A.left => exists_chart D.P.isLB (χ z)
+    choose I hI using fun χ : (TF (R := R) F).left ⟶ D.P.A.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart D.P.isLB (χ z)
     have e₁ := ha α _ (DegPre.zF D F).left z I hI
     have e₀ := ha 0 _ (DegPre.zF D F).left z I hI
     rw [hz] at e₁ e₀
@@ -222,7 +222,7 @@ theorem phiPow_core (hG : GlobalFnsSt) {k : ℕ} (p : QkPt D F k)
   refine ⟨c, ?_, fun ss H => ?_⟩
   · rintro rfl
     obtain ⟨z⟩ : Nonempty (TF (R := R) F).left := inferInstanceAs (Nonempty (PrimeSpectrum F))
-    choose I hI using fun χ : (TF (R := R) F).left ⟶ D.P.A.left => exists_chart D.P.isLB (χ z)
+    choose I hI using fun χ : (TF (R := R) F).left ⟶ D.P.A.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart D.P.isLB (χ z)
     have e := ha 0 _ (DegPre.zF D F).left z I hI
     rw [hz, ← hc₀, map_zero] at e
     have g0 : gs (𝟙 (TF (R := R) F).left) z ⊤ 0 = 0 := by

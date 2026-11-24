@@ -34,7 +34,7 @@ theorem chart_of_point {X Y : Scheme.{0}} {L : LB X} (hL : L.IsLB) {K : Type} [F
   intro j
   refine fn_ext fun y hy0 => ?_
   have hy : y ∈ LB.wchart L φ j := hy0
-  choose I hI using fun ψ : Y ⟶ X => exists_chart hL (ψ y)
+  choose I hI using fun ψ : Y ⟶ X => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL (ψ y)
   have hIy : Good L y I := hI
   have mm := hIy.mem φ (𝟙 _)
   have T0 := sec_trans s (𝟙 _) y hy mm

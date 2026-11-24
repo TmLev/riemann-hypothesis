@@ -131,7 +131,7 @@ theorem commIsOf_move (hL₀ : L₀.IsLB) (hL₁ : L₁.IsLB) (w : LB.Iso L₁ (
     (hc : ∀ (Z : Scheme.{0}) (r : Z ⟶ T.left) (z : Z), gm (r ≫ τ) z ⊤ c₀ = gm r z ⊤ c)
     (H : CommIsOf G L₀ k θx₀ θy₀ c₀) : CommIsOf A L₁ k θx θy c := by
   refine corr_of_val hL₁ fun y J hJ => ?_
-  choose J₀ hJ₀ using fun χ : (T ⊗ A).left ⟶ G.left => exists_chart hL₀ (χ y)
+  choose J₀ hJ₀ using fun χ : (T ⊗ A).left ⟶ G.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL₀ (χ y)
   have hG : Good L₀ y J₀ := hJ₀
   let W : ((T ⊗ A).left ⟶ A.left) → ((T ⊗ A).left.presheaf.stalk y)ˣ := fun ψ => gw w ψ y (J₀ (ψ ≫ φ)) (J ψ)
   have rel : ∀ (θ₀ : ThetaGrp G L₀ k T₀) (θ : ThetaGrp A L₁ k T), τ ≫ θ₀.pt.left = θ.pt.left ≫ φ →
@@ -191,7 +191,7 @@ theorem commIsOf_unique {S : Scheme.{0}} {A : Over S} [GrpObj A] {L : LB A.left}
   let s : T.left ⟶ (T ⊗ A).left := (lift (𝟙 T) (toUnit T ≫ η[A])).left
   have hs : s ≫ (fst T A).left = 𝟙 _ := by rw [← Over.comp_left, lift_fst, Over.id_left]
   refine unit_ext fun z _ => ?_
-  choose J hJ using fun χ : T.left ⟶ A.left => exists_chart hL (χ z)
+  choose J hJ using fun χ : T.left ⟶ A.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL (χ z)
   have hJ' : Good L z J := hJ
   have e := (val_mul hJ' _ _ s).symm.trans ((val_corr hJ' h s).symm.trans ((val_corr hJ' h' s).trans (val_mul hJ' _ _ s)))
   have e' := mul_left_cancel e

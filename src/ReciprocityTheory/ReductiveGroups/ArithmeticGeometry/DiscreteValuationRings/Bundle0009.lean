@@ -234,7 +234,7 @@ theorem secB_dvd_of_vge {V : Type} [CommRing V] [IsDomain V] [IsDiscreteValuatio
     refine eq_zero_of_app_fst_open D.toPre.P.A.hom (TF (R := V) (FractionRing V)).hom _ _
       (app_fst_eq_zero_of_snd _ _ _ _ (snd_app_eq_zero _ _ _ _ fun y hy => ?_))
     choose J hJ using fun ψ : (Out.DegPre.BF D.toPre (FractionRing V)).left ⟶ D.toPre.P.A.left =>
-      exists_chart D.toPre.P.isLB (ψ y)
+      ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart D.toPre.P.isLB (ψ y)
     have hG : Good D.toPre.P.L y J := hJ
     set π := pullback.snd (TF (R := V) (FractionRing V)).hom D.toPre.P.A.hom
     set U := (LB.LinComb D.toPre.P.L (D.toPre.famφB α) (Out.DegPre.famε k)).U j

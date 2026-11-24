@@ -335,7 +335,7 @@ theorem exists_ratio (hL : L.IsLB) {K K' : Type} [Fintype K] [Fintype K'] {φ : 
   refine ⟨c, ?_, key⟩
   rintro rfl
   obtain ⟨z⟩ : Nonempty (Spec (CommRingCat.of F)) := inferInstanceAs (Nonempty (PrimeSpectrum F))
-  choose I hI' using fun χ : Spec (CommRingCat.of F) ⟶ X => exists_chart hL (χ z)
+  choose I hI' using fun χ : Spec (CommRingCat.of F) ⟶ X => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL (χ z)
   have e := key _ (𝟙 _) z I hI'
   have g0 : gs (𝟙 (Spec (CommRingCat.of F))) z ⊤ ((Scheme.ΓSpecIso (CommRingCat.of F)).inv.hom 0) = 0 := by
     rw [map_zero]

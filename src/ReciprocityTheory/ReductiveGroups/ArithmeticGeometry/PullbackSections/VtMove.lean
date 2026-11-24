@@ -143,7 +143,7 @@ theorem twist_of_val {S₁ : Scheme.{0}} {A₁ : Over S₁} [GrpObj A₁] {M : L
     IsTwistPull A₁ M ψ m hm a b α s s' := by
   intro j
   refine fn_ext fun y hy => ?_
-  choose I hI using fun χ : (T ⊗ A₁).left ⟶ A₁.left => exists_chart hM (χ y)
+  choose I hI using fun χ : (T ⊗ A₁).left ⟶ A₁.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hM (χ y)
   have hG : Good M y I := hI
   dsimp only
   have hz0 : (𝟙 (T ⊗ A₁).left : (T ⊗ A₁).left ⟶ _) y ∈
@@ -275,7 +275,7 @@ theorem mulGen_move {E : Type} [Field E] [NumberField E] [NumberField.IsCMField 
     rw [← Over.comp_left, MonObj.comp_pow, Category.comp_id, eta1, one_pow]
   unfold IsNormMul
   refine corr_of_val t'.PP.isLB fun y J hJ => ?_
-  choose J₀ hJ₀ using fun χ : (𝟙_ (Over S₂')).left ⟶ t.G.left => exists_chart t.PP.isLB (χ y)
+  choose J₀ hJ₀ using fun χ : (𝟙_ (Over S₂')).left ⟶ t.G.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart t.PP.isLB (χ y)
   have hJ₀' : Good t.PP.L y J₀ := hJ₀
   have c0 := val_corr hJ₀' hN m.cm.e
   rw [val_pull hJ₀', val_mul hJ₀', val_rigPow, val_inv] at c0

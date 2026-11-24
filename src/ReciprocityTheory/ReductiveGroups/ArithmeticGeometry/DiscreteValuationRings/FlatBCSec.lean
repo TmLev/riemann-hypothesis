@@ -501,7 +501,7 @@ lemma isoRel_inj_left (hM : M.IsLB) {w : LB.Iso L M} {s t : LB.Sec L} {s' : LB.S
   have hf : s.f = t.f := by
     funext k
     refine fn_ext fun y hy => ?_
-    obtain ⟨i, hi⟩ := exists_chart hM y
+    obtain ⟨i, hi⟩ := ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hM y
     have e1 := gs_isoRel hs i k y hi hy
     have e2 := gs_isoRel ht i k y hi hy
     rw [e1] at e2
@@ -513,7 +513,7 @@ lemma isoRel_inj_right (hL : L.IsLB) {w : LB.Iso L M} {s : LB.Sec L} {s' t' : LB
   have hf : s'.f = t'.f := by
     funext i
     refine fn_ext fun y hy => ?_
-    obtain ⟨k, hk⟩ := exists_chart hL y
+    obtain ⟨k, hk⟩ := ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL y
     rw [gs_isoRel hs i k y hy hk, gs_isoRel ht i k y hy hk]
   cases s'; cases t'; simp only at hf; subst hf; rfl
 
@@ -540,7 +540,7 @@ theorem exists_isoRel (hL : L.IsLB) (hM : M.IsLB) {w : LB.Iso L M} (hw : w.IsGen
     ∃ s' : LB.Sec M, IsoRel w s s' := by
   classical
   have hcovi : ∀ i, M.U i ≤ ⨆ k, M.U i ⊓ L.U k := fun i y hy => by
-    obtain ⟨k, hk⟩ := exists_chart hL y
+    obtain ⟨k, hk⟩ := ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL y
     exact TopologicalSpace.Opens.mem_iSup.2 ⟨k, hy, hk⟩
   let cand : ∀ i k, Γ(Y, M.U i ⊓ L.U k) := fun i k =>
     (show Γ(Y, M.U i ⊓ L.U k) from (w.s (i, k) : Γ(Y, (LB.div M L).U (i, k)))) * rs inf_le_right (s.f k)
@@ -565,7 +565,7 @@ theorem exists_isoRel (hL : L.IsLB) (hM : M.IsLB) {w : LB.Iso L M} (hw : w.IsGen
     rw [gs_res _ y _ hyik] at e
     rw [e, gcand i k y hyik]
   refine ⟨⟨F, fun i i' => fn_ext fun y hy => ?_⟩, fun i k => fn_ext fun y hy => ?_⟩
-  · obtain ⟨k, hk⟩ := exists_chart hL y
+  · obtain ⟨k, hk⟩ := ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL y
     rw [gs_res _ y _ hy, gs_mul _ y _ hy, gs_res _ y _ hy, gs_unit _ y _ hy, gF i k y hy.1 hk, gF i' k y hy.2 hk,
       gm_wgen hw i i' k k y hy.1 hy.2 hk hk, gm_self hL (𝟙 Y) y hk, inv_one, mul_one, Units.val_mul, mul_assoc]
   · rw [gs_res _ y _ hy, gs_mul _ y _ hy, gs_res _ y _ hy, gF i k y hy.1 hy.2]

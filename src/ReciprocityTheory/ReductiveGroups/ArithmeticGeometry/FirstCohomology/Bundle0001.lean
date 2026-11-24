@@ -47,7 +47,7 @@ theorem exists_gen_move (hL : L.IsLB) (hL' : L'.IsLB) (w : LB.Iso L' (L.pull F))
     have m := le1 q p k hz
     exact (map_zpow _ _ _).trans (congrArg (· ^ ε k) ((gm_res r z (le1 q p k) hz _).trans (gm_pull r (φ' k) z _ m _)))
   have memO : ∀ q (y : Y'), y ∈ LB.wchart L' φ' q → ∃ p, y ∈ O q p := fun q y hy => by
-    choose p hp using fun k => exists_chart hL (F (φ' k y))
+    choose p hp using fun k => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL (F (φ' k y))
     exact ⟨p, hy, Set.mem_iInter.2 fun k => mem_pull.2 (hp k)⟩
   have glue : ∀ q, ∃ s : Γ(Y', LB.wchart L' φ' q)ˣ, ∀ p, res (inf_le_left : O q p ≤ _) s = v q p := by
     intro q
@@ -76,7 +76,7 @@ theorem exists_gen_move (hL : L.IsLB) (hL' : L'.IsLB) (w : LB.Iso L' (L.pull F))
   refine ⟨⟨s⟩, fun q q' => unit_ext fun y hy => ?_, fun Z r z p q hp hq => ?_⟩
   · have hq : ∀ k, φ' k y ∈ L'.U (q k) := fun k => Set.mem_iInter.1 hy.1 k
     have hq' : ∀ k, φ' k y ∈ L'.U (q' k) := fun k => Set.mem_iInter.1 hy.2 k
-    choose p hp using fun k => exists_chart hL (F (φ' k y))
+    choose p hp using fun k => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL (F (φ' k y))
     have m : y ∈ O q p := ⟨hy.1, Set.mem_iInter.2 fun k => mem_pull.2 (hp k)⟩
     have m' : y ∈ O q' p := ⟨hy.2, Set.mem_iInter.2 fun k => mem_pull.2 (hp k)⟩
     rw [gm_res _ y _ hy, map_mul, gm_res _ y _ hy]

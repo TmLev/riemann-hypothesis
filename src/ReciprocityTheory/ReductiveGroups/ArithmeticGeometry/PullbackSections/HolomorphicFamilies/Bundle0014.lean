@@ -157,7 +157,7 @@ theorem genSnd_move (hL₀ : L₀.IsLB) (hL₁ : L₁.IsLB) (w : LB.Iso L₁ (L�
     · exact hce
   obtain ⟨α', g', hm⟩ := exists_gen_move hL₀ hL₁ w hw _ _ ε (psiO hp τ hτ).left hc1 α hα
   refine ⟨α', g', hm, corr_of_val hL₁ fun y J hJ => ?_⟩
-  choose J₀ hJ₀ using fun χ : (T ⊗ A).left ⟶ G.left => exists_chart hL₀ (χ y)
+  choose J₀ hJ₀ using fun χ : (T ⊗ A).left ⟶ G.left => ReciprocityTheory.ChartRestriction.G.Geo.Tor.exists_chart hL₀ (χ y)
   have hJ₀' : Good L₀ y J₀ := hJ₀
   have p1 := val_pmaps' w hc1 hm (𝟙 _) y J₀ J hJ₀' hJ
   have p2 := val_pmaps' w hc2 hPM (snd T A).left y J₀ J hJ₀' hJ
