@@ -183,30 +183,17 @@ lemma constTermAt_smul_k {ξ : E} (hξ : ξ ≠ 0) {f : 𝒮 (W'.hom V')} :
     toAdele ξ • matrixToVec yᴴ by fun_prop [matrixToVec]
   have h_rat : ∀ y ∈ ratMatrices E n Unit, φ y ∈ ratVectors E (Unit × n) := by
     rintro _ ⟨x, rfl⟩
-    refine ⟨ξ • matrixToVec xᴴ, funext fun ⟨i, j⟩ ↦ ?_⟩
-    simp only [φ, AddMonoidHom.mk'_apply, AddMonoidHom.compLeft_apply, Function.comp_apply,
-      RingHom.toAddMonoidHom_eq_coe, AddMonoidHom.coe_ofClass, AddMonoidHom.mapMatrix_apply,
-      Pi.smul_apply, matrixToVec, conjTranspose_apply, Matrix.map_apply, star_toAdele,
-      smul_eq_mul, map_mul]
+    exact ⟨ξ • matrixToVec xᴴ, by aesop (add simp conjTranspose_map_toAdele)⟩
   have h_surj : Surjective φ := fun y ↦ ⟨(toAdele ξ⁻¹ • vecToMatrix y)ᴴ, by
-    simp only [φ, AddMonoidHom.mk'_apply, conjTranspose_conjTranspose, matrixToVec_smul,
-      matrixToVec_vecToMatrix, smul_smul, ← map_mul, mul_inv_cancel₀ hξ, map_one, one_smul]⟩
+    simp [φ, smul_smul, ← map_mul, hξ, star_toAdele, matrixToVec_smul, matrixToVec_vecToMatrix]⟩
   have hFφ : IsContPeriodic (ratMatrices E n Unit) fun y ↦ F (φ y) :=
     ⟨hF.1.comp h_cont, fun γ hγ y ↦ by simp only [map_add, hF.2 _ (h_rat γ hγ)]⟩
-  have h_iso : (ξ • X.k)ᴴ * V'.J * (ξ • X.k) = 0 := by
-    rw [conjTranspose_smul, Matrix.smul_mul, Matrix.smul_mul, Matrix.mul_smul, X.gram_kk,
-      smul_zero, smul_zero]
-  have hk : V'.x⁻¹.val * (ξ • X.k).map toAdele = toAdele ξ • X.kAdelic := by
-    have hmap : (ξ • X.k).map toAdele = toAdele ξ • X.k.map toAdele :=
-      Matrix.ext fun i j ↦ map_mul toAdele ξ (X.k i j)
-    rw [hmap, Matrix.mul_smul, kAdelic]
+  have h_iso : (ξ • X.k)ᴴ * V'.J * (ξ • X.k) = 0 := by simp
   have h_integrand (y : Matrix n Unit (𝔸 E)) :
       A.thetaTerm V' 1 1 f (lineRadical A (y, 0)) (ξ • X.k) 1 = F (φ y) := by
-    rw [thetaTerm_lineRadical]
-    simp only [Matrix.zero_mul, trace_zero, AddChar.map_zero_eq_one, Circle.coe_one, one_mul, hk, F,
-      mulVec_zero, zero_add, homTarget_kAdelic, φ, AddMonoidHom.mk'_apply]
-    rw [mulVec_smul, kronecker_mulVec_eq_matrixToVec, vecToMatrix_matrixToVec]
-    simp only [dualFrame, Matrix.smul_mul, matrixToVec_smul, conjTranspose_mul, Matrix.mul_assoc]
+    simp only [thetaTerm_lineRadical, F, homTarget_kAdelic]
+    simp [X.k.map_smulₛₗ _ toAdele, φ, kAdelic, kronecker_mulVec_eq_matrixToVec, dualFrame,
+      Matrix.mul_assoc, matrixToVec_smul, mulVec_smul, vecToMatrix_matrixToVec, -transpose_mul]
   rw [h_mean, ← quotMean_comp _ φ hF h_rat h_surj h_cont,
     ← average_quotMeasure_eq_quotMean _ volume hFφ]
   simp only [constTermAt, ite_eq_left h_iso, h_integrand]
@@ -257,8 +244,7 @@ omit [WeilData E]
 
 lemma coe_hermitianPart (b : Matrix Unit Unit (𝔸 E)) :
     (hermitianPart b).val = toAdele (2⁻¹ : E) • (b + bᴴ) := by
-  simp only [hermitianPart, star_eq_conjTranspose, conjTranspose_smul, star_toAdele, star_inv₀,
-    star_ofNat, smul_add]
+  simp [hermitianPart, star_eq_conjTranspose, star_toAdele, smul_add]
 
 /-- The hermitian part is additive. -/
 lemma hermitianPart_add (b₁ b₂ : Matrix Unit Unit (𝔸 E)) :
@@ -519,8 +505,7 @@ lemma mem_lineStabilizer_iff (g : G E t') :
     simp only [Units.smul_def, LinearMap.map_smulₛₗ, funext_iff, Pi.smul_apply, smul_eq_mul]
     exact exists_congr fun _ ↦ forall_congr' fun _ ↦ by rw [mul_comm, eq_comm]
   simp only [lineStabilizer, Space.Γ, Subgroup.mem_map, MonoidHom.mem_range, h_rat]
-  exact ⟨fun ⟨γ, h, hγ⟩ ↦ ⟨⟨γ, hγ⟩, hγ ▸ h⟩,
-    fun ⟨⟨γ, hγ⟩, h⟩ ↦ ⟨γ, hγ.symm ▸ h, hγ⟩⟩
+  grind
 
 /-- The rational stabiliser of the line is discrete, as a subset of the rational points. -/
 instance : DiscreteTopology (lineStabilizer X) :=
