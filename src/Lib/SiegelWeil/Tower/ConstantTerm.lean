@@ -71,7 +71,7 @@ noncomputable section
 
 namespace New.Exchange
 
-open Matrix MeasureTheory Measure Units MulAction Space Splitting Submodule Pointwise Function Equiv
+open Matrix MeasureTheory Measure Units MulAction Space Splitting Submodule Function Equiv
   WeilData
 
 variable {E : Type} [Field E] [CMType E] [WeilData E] {n n' r r' : Type} [Fintype n] [DecidableEq n]
@@ -85,6 +85,13 @@ adelic matrices modulo rational matrices. Integration against it is the mean ove
 the stabiliser of the line modulo its rational points, that is, the constant term. -/
 abbrev radicalMeasure : Measure (Matrix n Unit (𝔸 E) × Matrix Unit Unit (𝔸 E)) :=
   (ratMatrices E n Unit).quotMeasure.prod (ratMatrices E Unit Unit).quotMeasure
+
+private lemma continuous_lineRadical : Continuous (lineRadical A) :=
+  A.continuous_radicalElement.comp
+    (f := fun q : Matrix n Unit (𝔸 E) × Matrix Unit Unit (𝔸 E) ↦
+      (W.x⁻¹.val * q.1, toAdele (2 : E) • q.2))
+    ((continuous_const.matrix_mul continuous_fst).prodMk
+      ((continuous_const_smul (toAdele (2 : E))).comp continuous_snd))
 
 open scoped Classical in
 /-- The term of the rational vector `x` of `V` in the constant term along the line of `A`: zero
@@ -148,18 +155,25 @@ lemma hasSum_constTermAt {f : 𝒮 (W'.hom V)} :
   have h_expand (q) : HasSum (fun x : Matrix r Unit E ↦ A.thetaTerm V a b f (lineRadical A q) x 1)
       (pairTheta W' V a b f (lineRadical A q, 1)) :=
     A.hasSum_theta_homSlice V (pairWeil W' V a b (lineRadical A q, 1) f)
+  have h_weil : Continuous fun q : Matrix n Unit (𝔸 E) × Matrix Unit Unit (𝔸 E) ↦
+      pairWeil W' V a b (lineRadical A q, 1) f :=
+    (continuous_pairWeil W' V a b).comp (f := fun q ↦ ((lineRadical A q, 1), f))
+      (((continuous_lineRadical A).prodMk continuous_const).prodMk continuous_const)
   let column : (r → E) ≃ Matrix r Unit E := piCongrRight fun _ ↦ (funUnique Unit E).symm
   change HasSum ((fun x : Matrix r Unit E ↦ constTermAt A x f) ∘ column) _
   simp_rw [column.hasSum_iff, constTermAt_eq_integral A a b]
   exact hasSum_integral_of_dominated_convergence (fun x _ ↦ bound x)
-    (fun x ↦ by fun_prop [Splitting.thetaTerm]) (fun x ↦ .of_forall (h_le x))
-    (.of_forall fun _ ↦ h_summable) (by simp) (.of_forall h_expand)
+    (fun x ↦ ((θ (W.hom V)).continuous.comp
+      ((A.homSlice V _).continuous.comp h_weil)).aestronglyMeasurable)
+    (fun x ↦ .of_forall (h_le x)) (.of_forall fun _ ↦ h_summable) (by simp)
+    (.of_forall h_expand)
 
 /-- The term of the zero vector is the theta functional of `Hom(W, V)` at the term of `f` at `0`. -/
 lemma constTermAt_zero (f : 𝒮 (W'.hom V)) :
     constTermAt A 0 f = θ (W.hom V) (A.homSlice V 0 f) := by
-  simp [constTermAt, Splitting.thetaTerm, homSlice_radicalElement, matrixToVec_zero,
-    Heisenberg.Rep.rho_zero_apply, theta_apply]
+  simp only [constTermAt, conjTranspose_zero, Matrix.zero_mul, ↓reduceIte, thetaTerm_lineRadical,
+    Matrix.map_zero, map_zero, Matrix.mul_zero, trace_zero, AddChar.map_zero_eq_one, Circle.coe_one,
+    one_mul, matrixToVec_zero, theta_apply, average_const]
 
 /-- For `ξ ≠ 0`, the term of the rational vector `ξ • X.k` on the isotropic line of `X` in the
 constant term along the line of `A` (`constTermAt A`, defined as the mean of its theta term over the
@@ -179,21 +193,38 @@ lemma constTermAt_smul_k {ξ : E} (hξ : ξ ≠ 0) {f : 𝒮 (W'.hom V')} :
   -- Substitute `y ↦ ξ • yᴴ`, which is onto as `ξ ≠ 0` and keeps rational points.
   let φ : Matrix n Unit (𝔸 E) →+ (Unit × n → 𝔸 E) :=
     .mk' (fun y ↦ toAdele ξ • matrixToVec yᴴ) (by simp [matrixToVec_add])
-  have h_cont : Continuous φ := show Continuous fun y : Matrix n Unit (𝔸 E) ↦
-    toAdele ξ • matrixToVec yᴴ by fun_prop [matrixToVec]
+  have h_cont : Continuous φ := by
+    change Continuous fun y : Matrix n Unit (𝔸 E) ↦ toAdele ξ • matrixToVec yᴴ
+    exact (continuous_const_smul (toAdele ξ)).comp
+      (continuous_pi fun p : Unit × n ↦
+        ((continuous_apply p.1).comp
+          (continuous_apply (A := fun _ : n ↦ Unit → 𝔸 E) p.2)).star)
   have h_rat : ∀ y ∈ ratMatrices E n Unit, φ y ∈ ratVectors E (Unit × n) := by
     rintro _ ⟨x, rfl⟩
-    exact ⟨ξ • matrixToVec xᴴ, by aesop (add simp conjTranspose_map_toAdele)⟩
+    refine ⟨ξ • matrixToVec xᴴ, funext fun ⟨i, j⟩ ↦ ?_⟩
+    simp only [φ, AddMonoidHom.mk'_apply, AddMonoidHom.compLeft_apply, Function.comp_apply,
+      RingHom.toAddMonoidHom_eq_coe, AddMonoidHom.coe_ofClass, AddMonoidHom.mapMatrix_apply,
+      Pi.smul_apply, matrixToVec, conjTranspose_apply, Matrix.map_apply, star_toAdele,
+      smul_eq_mul, map_mul]
   have h_surj : Surjective φ := fun y ↦ ⟨(toAdele ξ⁻¹ • vecToMatrix y)ᴴ, by
-    simp [φ, smul_smul, ← map_mul, hξ, star_toAdele, matrixToVec_smul, matrixToVec_vecToMatrix]⟩
+    simp only [φ, AddMonoidHom.mk'_apply, conjTranspose_conjTranspose, matrixToVec_smul,
+      matrixToVec_vecToMatrix, smul_smul, ← map_mul, mul_inv_cancel₀ hξ, map_one, one_smul]⟩
   have hFφ : IsContPeriodic (ratMatrices E n Unit) fun y ↦ F (φ y) :=
     ⟨hF.1.comp h_cont, fun γ hγ y ↦ by simp only [map_add, hF.2 _ (h_rat γ hγ)]⟩
-  have h_iso : (ξ • X.k)ᴴ * V'.J * (ξ • X.k) = 0 := by simp
+  have h_iso : (ξ • X.k)ᴴ * V'.J * (ξ • X.k) = 0 := by
+    rw [conjTranspose_smul, Matrix.smul_mul, Matrix.smul_mul, Matrix.mul_smul, X.gram_kk,
+      smul_zero, smul_zero]
+  have hk : V'.x⁻¹.val * (ξ • X.k).map toAdele = toAdele ξ • X.kAdelic := by
+    have hmap : (ξ • X.k).map toAdele = toAdele ξ • X.k.map toAdele :=
+      Matrix.ext fun i j ↦ map_mul toAdele ξ (X.k i j)
+    rw [hmap, Matrix.mul_smul, kAdelic]
   have h_integrand (y : Matrix n Unit (𝔸 E)) :
       A.thetaTerm V' 1 1 f (lineRadical A (y, 0)) (ξ • X.k) 1 = F (φ y) := by
-    simp only [thetaTerm_lineRadical, F, homTarget_kAdelic]
-    simp [X.k.map_smulₛₗ _ toAdele, φ, kAdelic, kronecker_mulVec_eq_matrixToVec, dualFrame,
-      Matrix.mul_assoc, matrixToVec_smul, mulVec_smul, vecToMatrix_matrixToVec, -transpose_mul]
+    rw [thetaTerm_lineRadical]
+    simp only [Matrix.zero_mul, trace_zero, AddChar.map_zero_eq_one, Circle.coe_one, one_mul, hk, F,
+      mulVec_zero, zero_add, homTarget_kAdelic, φ, AddMonoidHom.mk'_apply]
+    rw [mulVec_smul, kronecker_mulVec_eq_matrixToVec, vecToMatrix_matrixToVec]
+    simp only [dualFrame, Matrix.smul_mul, matrixToVec_smul, conjTranspose_mul, Matrix.mul_assoc]
   rw [h_mean, ← quotMean_comp _ φ hF h_rat h_surj h_cont,
     ← average_quotMeasure_eq_quotMean _ volume hFφ]
   simp only [constTermAt, ite_eq_left h_iso, h_integrand]
@@ -225,7 +256,13 @@ lemma integral_thetaIntegral_lineRadical {f : 𝒮 (W'.hom V)} (hf : IsTargetBou
   -- Sum the terms by `hasSum_constTermAt`; what remains is Fubini for a bounded continuous kernel.
   simp only [(hasSum_constTermAt A a b).tsum_eq, ← pairTheta_mul, Prod.mk_mul_mk, one_mul,
     thetaIntegral]
-  exact integral_integral_swap (.of_bound (by fun_prop) D (.of_forall fun p ↦ h_bound p.1 p.2))
+  exact integral_integral_swap (.of_bound
+    ((continuous_pairTheta W' V a b).comp
+      (f := fun p : (Matrix n Unit (𝔸 E) × Matrix Unit Unit (𝔸 E)) × G E t ↦
+        (f, (lineRadical A p.1 * g, p.2)))
+      (continuous_const.prodMk
+        ((((continuous_lineRadical A).comp continuous_fst).mul continuous_const).prodMk
+          continuous_snd))).aestronglyMeasurable D (.of_forall fun p ↦ h_bound p.1 p.2))
 
 /-- Coordinates on the radical of the stabiliser of a line: a column and a hermitian scalar. -/
 abbrev RadicalCoord (E r : Type) [Field E] [CMType E] : Type :=
@@ -238,21 +275,56 @@ def hermitianPart (b : Matrix Unit Unit (𝔸 E)) : selfAdjoint (Matrix Unit Uni
 /-- The point of the radical of the stabiliser of the line of `X` with given coordinates. -/
 def radicalPoint (p : RadicalCoord E r) : G E t' := X.radicalElement p.1 p.2.val
 
-omit [WeilData E] in
+section
+
+omit [WeilData E]
+
 lemma coe_hermitianPart (b : Matrix Unit Unit (𝔸 E)) :
     (hermitianPart b).val = toAdele (2⁻¹ : E) • (b + bᴴ) := by
-  simp [hermitianPart, star_eq_conjTranspose, star_toAdele, smul_add]
+  simp only [hermitianPart, star_eq_conjTranspose, conjTranspose_smul, star_toAdele, star_inv₀,
+    star_ofNat, smul_add]
 
--- Keeps definitional checks from unfolding the finite sums.
-seal Finset.sum in
+private lemma continuous_hermitianPart : Continuous (hermitianPart (E := E)) := by
+  have h : Continuous fun b : Matrix Unit Unit (𝔸 E) ↦ toAdele (2⁻¹ : E) • b :=
+    continuous_const_smul _
+  exact Continuous.subtype_mk (h.add h.star) _
+
+private lemma hermitianPart_add (b₁ b₂ : Matrix Unit Unit (𝔸 E)) :
+    hermitianPart (b₁ + b₂) = hermitianPart b₁ + hermitianPart b₂ := by
+  ext : 1
+  simp only [AddSubgroup.coe_add, coe_hermitianPart, conjTranspose_add, smul_add]
+  abel
+
+private lemma hermitianPart_selfAdjoint (b : selfAdjoint (Matrix Unit Unit (𝔸 E))) :
+    hermitianPart b.val = b := by
+  ext : 1
+  simp only [coe_hermitianPart, IsHermitian.eq b.prop, smul_add, ← add_smul,
+    toAdele_half_add_half, one_smul]
+
+private lemma hermitianPart_of_conjTranspose_eq_neg {b : Matrix Unit Unit (𝔸 E)}
+    (hb : bᴴ = -b) : hermitianPart b = 0 := by
+  ext : 1
+  simp only [AddSubgroup.coe_zero, coe_hermitianPart, hb, add_neg_cancel, smul_zero]
+
+end
+
+private lemma radicalElement_mul_lAdelic (c : Matrix r Unit (𝔸 E))
+    (b : Matrix Unit Unit (𝔸 E)) :
+    (X.radicalElement c b).adeleMatrix * X.lAdelic =
+      X.lAdelic - X.iAdelic * c -
+        X.kAdelic * (toAdele (2⁻¹ : E) •
+          (toAdele (j⁻¹ : E) • (b + bᴴ) + cᴴ * stdForm E t * c)) := by
+  simp only [radicalElement, G.adeleMatrix_ofMatrix, Matrix.sub_mul, Matrix.add_mul,
+    Matrix.one_mul, Matrix.mul_assoc, X.lCoord_mul_lAdelic, X.iCoord_mul_lAdelic,
+    Matrix.mul_one, Matrix.mul_zero, add_zero]
+
 /-- The point `X.radicalElement c b` depends only on the hermitian part of `b`. -/
 lemma radicalPoint_hermitianPart (c : Matrix r Unit (𝔸 E)) (b : Matrix Unit Unit (𝔸 E)) :
     radicalPoint X (c, hermitianPart b) = X.radicalElement c b := by
   -- `b` enters the matrix only through `b + bᴴ`.
   have h_sum : (hermitianPart b).val + (hermitianPart b).valᴴ = b + bᴴ := by
-    simp only [coe_hermitianPart, smul_add, conjTranspose_add, conjTranspose_smul, star_toAdele,
-      star_inv₀, star_ofNat, conjTranspose_conjTranspose]
-    match_scalars <;> grind
+    rw [IsHermitian.eq (hermitianPart b).prop, coe_hermitianPart, ← add_smul,
+      toAdele_half_add_half, one_smul]
   exact G.ext_adeleMatrix (by simp only [radicalPoint, radicalElement, G.adeleMatrix_ofMatrix,
     h_sum])
 
@@ -263,16 +335,41 @@ lemma isClosedEmbedding_radicalPoint : Topology.IsClosedEmbedding (radicalPoint 
   refine LeftInverse.isClosedEmbedding (f := fun g : G E t' =>
       (-X.iCoord * g.adeleMatrix * X.lAdelic,
         hermitianPart (-toAdele (j : E) • X.kCoord * g.adeleMatrix * X.lAdelic)))
-    ?_ (by fun_prop [hermitianPart]) (by fun_prop [radicalPoint])
+    ?_
+    (((continuous_const.matrix_mul G.continuous_adeleMatrix).matrix_mul continuous_const).prodMk
+      (continuous_hermitianPart.comp
+        (f := fun g : G E t' ↦ -toAdele (j : E) • X.kCoord * g.adeleMatrix * X.lAdelic)
+        ((continuous_const.matrix_mul G.continuous_adeleMatrix).matrix_mul continuous_const)))
+    (X.continuous_radicalElement.comp (f := fun p : RadicalCoord E r ↦ (p.1, p.2.val))
+      (continuous_fst.prodMk (continuous_subtypeVal.comp continuous_snd)))
   rintro ⟨c, b, hb⟩
-  refine Prod.ext (by simp [radicalPoint, radicalElement, Matrix.mul_assoc, Matrix.mul_add,
-      Matrix.add_mul, Matrix.mul_sub, G.adeleMatrix_ofMatrix]) (Subtype.ext ?_)
-  simp [radicalPoint, radicalElement, IsHermitian.eq hb, Matrix.mul_assoc, Matrix.mul_add,
-    Matrix.add_mul, Matrix.mul_sub, Matrix.sub_mul, G.adeleMatrix_ofMatrix]
-  -- The second summand is skew-hermitian, as `star j = -j`.
-  simp [coe_hermitianPart, IsHermitian.eq hb, Matrix.mul_assoc, star_toAdele, star_j,
-    conjTranspose_stdForm]
-  match_scalars <;> grind
+  have h_l := radicalElement_mul_lAdelic X c b
+  refine Prod.ext ?_ ?_
+  · dsimp only [radicalPoint]
+    rw [Matrix.mul_assoc, h_l, Matrix.neg_mul, Matrix.mul_sub, Matrix.mul_sub,
+      X.iCoord_mul_lAdelic, X.iCoord_mul_iAdelic_mul, X.iCoord_mul_kAdelic_mul, zero_sub, sub_zero,
+      neg_neg]
+  · have hk : X.kCoord * ((X.radicalElement c b).adeleMatrix * X.lAdelic) =
+        -(toAdele (2⁻¹ : E) •
+          (toAdele (j⁻¹ : E) • (b + bᴴ) + cᴴ * stdForm E t * c)) := by
+      rw [h_l, Matrix.mul_sub, Matrix.mul_sub, X.kCoord_mul_lAdelic, X.kCoord_mul_iAdelic_mul,
+        X.kCoord_mul_kAdelic_mul, sub_zero, zero_sub]
+    have hj : toAdele (j : E) * toAdele (j⁻¹ : E) = 1 := by
+      rw [← map_mul, mul_inv_cancel₀ j_ne_zero, map_one]
+    have h_entry : -toAdele (j : E) • X.kCoord * (X.radicalElement c b).adeleMatrix * X.lAdelic =
+        b + toAdele (j : E) • (toAdele (2⁻¹ : E) • (cᴴ * stdForm E t * c)) := by
+      rw [Matrix.mul_assoc, Matrix.smul_mul, hk, _root_.neg_smul, smul_neg, neg_neg, smul_add,
+        smul_add, smul_comm (toAdele (j : E)) (toAdele (2⁻¹ : E)),
+        smul_smul (toAdele (j : E)) (toAdele (j⁻¹ : E)), hj, one_smul, IsHermitian.eq hb,
+        smul_add, ← add_smul, toAdele_half_add_half, one_smul]
+    have h_skew : (toAdele (j : E) • (toAdele (2⁻¹ : E) • (cᴴ * stdForm E t * c)))ᴴ =
+        -(toAdele (j : E) • (toAdele (2⁻¹ : E) • (cᴴ * stdForm E t * c))) := by
+      simp only [conjTranspose_smul, conjTranspose_mul, conjTranspose_conjTranspose,
+        conjTranspose_stdForm, Matrix.mul_assoc, star_toAdele, star_j, star_inv₀, star_ofNat,
+        map_neg, _root_.neg_smul]
+    dsimp only [radicalPoint]
+    rw [h_entry, hermitianPart_add, hermitianPart_selfAdjoint ⟨b, hb⟩,
+      hermitianPart_of_conjTranspose_eq_neg h_skew, add_zero]
 
 /-- The group law of the radical in coordinates: the columns add, and the hermitian scalars add
 with a correction, the hermitian part of the product of `j` (the chosen element of `E` with
@@ -282,10 +379,7 @@ lemma radicalPoint_mul (x q : RadicalCoord E r) :
       (x.1 + q.1, x.2 + hermitianPart (toAdele (j : E) • x.1ᴴ * stdForm E t * q.1) + q.2) := by
   let z : Matrix Unit Unit (𝔸 E) := toAdele (j : E) • x.1ᴴ * stdForm E t * q.1
   have h_part : x.2 + hermitianPart z + q.2 = hermitianPart (x.2.val + z + q.2.val) := by
-    ext : 1
-    simp only [AddSubgroup.coe_add, coe_hermitianPart, smul_add, conjTranspose_add,
-      IsHermitian.eq x.2.prop, IsHermitian.eq q.2.prop]
-    match_scalars <;> grind
+    rw [hermitianPart_add, hermitianPart_add, hermitianPart_selfAdjoint, hermitianPart_selfAdjoint]
   rw [h_part, radicalPoint_hermitianPart, radicalPoint, radicalPoint, radicalElement_mul]
 
 /-- The radical of the stabiliser of the line of `X`, as a subgroup of the adelic unitary group of
@@ -329,9 +423,12 @@ instance isHaarMeasure_radicalHaar : IsHaarMeasure (radicalHaar X) := by
       (x.1 + q.1, x.2 + hermitianPart (toAdele (j : E) • x.1ᴴ * stdForm E t * q.1) + q.2)
     have hT : MeasurePreserving T (volume.prod addHaar) (volume.prod addHaar) :=
       (measurePreserving_add_left _ x.1).skew_product (g := fun c b ↦ (T (c, b)).2)
-        (Continuous.measurable (by fun_prop [hermitianPart]))
-        (by simp [T, map_add_left_eq_self, Matrix.mul_assoc])
-    refine ((e.measurable.measurePreserving _).of_semiconj hT (fun q ↦ ?_) (by fun_prop)).map_eq
+        ((continuous_const.add
+          (continuous_hermitianPart.comp (continuous_const.matrix_mul continuous_fst))).add
+          continuous_snd).measurable
+        (.of_forall fun c ↦ by dsimp only [T]; exact map_add_left_eq_self addHaar _)
+    refine ((e.measurable.measurePreserving _).of_semiconj hT (fun q ↦ ?_)
+      (measurable_const_mul _)).map_eq
     exact Subtype.ext (radicalPoint_mul X x q).symm
   exact { IsFiniteMeasureOnCompacts.map _ e, h_inv,
     e.continuous.isOpenPosMeasure_map e.surjective with }
@@ -362,23 +459,33 @@ lemma lintegral_radicalHaar_conj_lineLevi (p : (𝔸 E)ˣ × G E t) (f : G E t' 
     mul_inv_eq_of_eq_mul (X.levi_conj_radicalElement q.1 q.2 a p.2)
   have hC₁ : MeasurePreserving C₁ volume
       (ENNReal.ofReal (ideleAbs ((star a).det ^ Fintype.card r * h.det))⁻¹ • volume) :=
-    ⟨Continuous.measurable (by fun_prop), volume_map_mul_mul_adele h (star a)⟩
+    ⟨((continuous_const.matrix_mul continuous_id).matrix_mul continuous_const).measurable,
+      volume_map_mul_mul_adele h (star a)⟩
   have hC₂ : MeasurePreserving C₂ addHaar (ENNReal.ofReal (ideleAbs a.det)⁻¹ • addHaar) :=
-    ⟨by fun_prop, map_conjugate_selfAdjoint (a := a) addHaar⟩
+    ⟨(Continuous.subtype_mk
+      ((continuous_const.matrix_mul continuous_subtypeVal).matrix_mul continuous_const)
+      _).measurable, map_conjugate_selfAdjoint (a := a) addHaar⟩
   have h_det : ideleAbs h.det = 1 := ideleAbs_eq_one_of_mem_unitary p.2.det.prop
+  have ha_det : a.det = p.1⁻¹ := by
+    simp only [a, GeneralLinearGroup.det_scalar, Fintype.card_unique, pow_one]
+  have h_scale :
+      ENNReal.ofReal (ideleAbs ((star a).det ^ Fintype.card r * h.det))⁻¹ *
+        ENNReal.ofReal (ideleAbs a.det)⁻¹ =
+      ENNReal.ofReal (ideleAbs p.1 ^ (Fintype.card r + 1)) := by
+    rw [← ENNReal.ofReal_mul (inv_nonneg.2 ideleAbs_nonneg_and_ne_zero.1)]
+    congr 1
+    rw [map_mul, map_pow, h_det, mul_one, det_star, ideleAbs_star, ha_det,
+      map_inv, inv_pow, inv_inv, inv_inv, pow_succ]
   have hC : MeasurePreserving (Prod.map C₁ C₂) (volume.prod addHaar)
       (ENNReal.ofReal (ideleAbs p.1 ^ (Fintype.card r + 1)) • volume.prod addHaar) := by
-    convert hC₁.prod hC₂
-    simp [a, h_det, pow_succ', prod_smul_left, prod_smul_right, smul_smul,
-      ideleAbs_nonneg_and_ne_zero, det_star, ideleAbs_star]
+    have h_prod := hC₁.prod hC₂
+    rwa [prod_smul_left, prod_smul_right, smul_smul, h_scale] at h_prod
   rw [lintegral_radicalHaar X fun g ↦ f (lineLevi X p * g * (lineLevi X p)⁻¹),
     lintegral_radicalHaar X f]
   simp only [h_conj]
   exact (hC.lintegral_comp (hf.comp (isClosedEmbedding_radicalPoint X).measurable)).trans
     (lintegral_smul_measure _ _)
 
--- Keeps definitional checks from unfolding the finite sums.
-seal Finset.sum Finset.prod Finset.univ in
 /-- The Levi factor meets the radical only in the identity: if the Levi element `lineLevi X p` lies
 in the radical, then `p = 1`. -/
 lemma eq_one_of_levi_mem_radical {p : (𝔸 E)ˣ × G E t}
@@ -386,16 +493,21 @@ lemma eq_one_of_levi_mem_radical {p : (𝔸 E)ˣ × G E t}
   obtain ⟨a, g⟩ := p
   obtain ⟨c, b, h_eq⟩ := (mem_radicalSubgroup_iff X _).1 hp
   -- Compare the two diagonal blocks that determine `a` and `g`.
-  have h_mat : (lineLevi X (a, g)).adeleMatrix = (X.radicalElement c b).adeleMatrix := by rw [h_eq]
+  have h_mat : (X.levi (.scalar Unit a⁻¹, g)).adeleMatrix = (X.radicalElement c b).adeleMatrix :=
+    congrArg G.adeleMatrix h_eq.symm
   have ha : a = 1 := by
-    simpa [lineLevi, Splitting.levi, radicalElement, ← ext_iff, Matrix.one_apply, Matrix.mul_assoc,
-      G.adeleMatrix_ofMatrix, Matrix.mul_add, coord_mul_frame_mul, coord_mul_frame, Matrix.add_mul,
-      Matrix.mul_sub, Matrix.sub_mul] using congrArg (X.kCoord * · * X.kAdelic) h_mat
+    have hk := congrArg (fun M ↦ X.kCoord * (M * X.kAdelic)) h_mat
+    rw [X.actsOnFrame_levi, X.actsOnFrame_radicalElement, X.kCoord_mul_kAdelic_mul,
+      X.kCoord_mul_kAdelic_mul] at hk
+    have h1 : a⁻¹.val = (1 : 𝔸 E) := by
+      simpa only [GeneralLinearGroup.coe_scalar, Matrix.scalar_apply, diagonal_apply_eq,
+        Matrix.one_apply_eq] using congrFun (congrFun hk ()) ()
+    exact inv_eq_one.1 (Units.ext h1)
   have hg : g.adeleMatrix = 1 := by
-    simpa [lineLevi, Splitting.levi, radicalElement, Matrix.mul_assoc, G.adeleMatrix_ofMatrix,
-      Matrix.mul_add,
-      coord_mul_frame_mul, coord_mul_frame, Matrix.add_mul, Matrix.mul_sub, Matrix.sub_mul]
-      using congrArg (X.iCoord * · * X.iAdelic) h_mat
+    have hi := congrArg (fun M ↦ X.iCoord * (M * X.iAdelic)) h_mat
+    rw [X.levi_mul_iAdelic, X.radicalElement_mul_iAdelic, X.iCoord_mul_iAdelic_mul,
+      Matrix.mul_add, X.iCoord_mul_iAdelic, X.iCoord_mul_kAdelic_mul, add_zero] at hi
+    exact hi
   exact Prod.ext ha (G.ext_adeleMatrix (hg.trans G.adeleMatrix_one.symm))
 
 section
@@ -412,15 +524,31 @@ lemma lintegral_levi_unfold (f : (𝔸 E)ˣ × G E t → ENNReal) (hf : Measurab
         ∂((principalAdeleUnits E).quotMeasure haar).prod V.quotMeasure := by
   have h_unitary (u : (𝔸 E)ˣ) :
       ∫⁻ h : G E t, f (u, h) = ∑' γ : V.Γ, ∫⁻ h : G E t, f (u, γ * h) ∂V.quotMeasure := by
-    rw [← lintegral_orbitMeasure_lintegral (ν := count (α := V.Γ)) (by fun_prop),
-      ← lintegral_tsum (by fun_prop)]
+    have hf_u : Measurable fun h : G E t ↦ f (u, h) :=
+      hf.comp (measurable_const.prodMk measurable_id)
+    have hf_mul (γ : V.Γ) : Measurable fun h : G E t ↦ f (u, γ * h) :=
+      hf.comp (measurable_const.prodMk (measurable_const_mul _))
+    rw [← lintegral_orbitMeasure_lintegral (ν := count (α := V.Γ)) hf_u,
+      ← lintegral_tsum fun γ ↦ (hf_mul γ).aemeasurable]
     simp only [lintegral_count, Subgroup.smul_def, _root_.smul_eq_mul]
   -- Unfold in the idele variable, then in the unitary one.
-  rw [lintegral_prod _ (by fun_prop), lintegral_prod _ (by fun_prop),
-    ← lintegral_orbitMeasure_lintegral (ν := count (α := principalAdeleUnits E)) (by fun_prop)]
+  have hf_sum : Measurable fun m : (𝔸 E)ˣ × G E t ↦
+      ∑' d : principalAdeleUnits E × V.Γ,
+        f (Prod.map (principalAdeleUnits E).subtype V.Γ.subtype d * m) :=
+    Measurable.tsum fun d ↦ hf.comp (measurable_const_mul _)
+  rw [lintegral_prod _ hf.aemeasurable, lintegral_prod _ hf_sum.aemeasurable,
+    ← lintegral_orbitMeasure_lintegral (ν := count (α := principalAdeleUnits E))
+      hf.lintegral_prod_right']
   refine lintegral_congr fun u ↦ ?_
-  rw [lintegral_count, lintegral_tsum (by fun_prop), tsum_prod']
-  simp [h_unitary, Subgroup.smul_def]
+  have hf_d (d : principalAdeleUnits E × V.Γ) :
+      Measurable fun h : G E t ↦
+        f (Prod.map (principalAdeleUnits E).subtype V.Γ.subtype d * (u, h)) :=
+    hf.comp ((measurable_const_mul _).comp (measurable_const.prodMk measurable_id))
+  rw [lintegral_count, lintegral_tsum fun d ↦ (hf_d d).aemeasurable, tsum_prod']
+  simp only [Subgroup.smul_def, _root_.smul_eq_mul, h_unitary, Prod.map_apply, Subgroup.coe_subtype,
+    Prod.mk_mul_mk]
+
+open scoped Pointwise
 
 /-- The rational isotropic line of the splitting `X`: the span of the vector `X.k`. -/
 def splittingLine : Submodule E (r' → E) := E ∙ X.k.col ()
@@ -452,24 +580,31 @@ lemma mem_lineStabilizer_iff (g : G E t') :
     simp only [Units.smul_def, LinearMap.map_smulₛₗ, funext_iff, Pi.smul_apply, smul_eq_mul]
     exact exists_congr fun _ ↦ forall_congr' fun _ ↦ by rw [mul_comm, eq_comm]
   simp only [lineStabilizer, Space.Γ, Subgroup.mem_map, MonoidHom.mem_range, h_rat]
-  grind
+  exact ⟨fun ⟨γ, h, hγ⟩ ↦ ⟨⟨γ, hγ⟩, hγ ▸ h⟩,
+    fun ⟨⟨γ, hγ⟩, h⟩ ↦ ⟨γ, hγ.symm ▸ h, hγ⟩⟩
 
 /-- The rational stabiliser of the line is discrete, as a subset of the rational points. -/
 instance : DiscreteTopology (lineStabilizer X) :=
   DiscreteTopology.of_subset (inferInstance : DiscreteTopology V'.Γ)
     fun g hg ↦ ((mem_lineStabilizer_iff X g).1 hg).1
 
--- Keeps definitional checks from unfolding the finite sums.
-seal Finset.sum Finset.prod Finset.univ in
 /-- The embedding `lineLevi X` of the Levi factor is continuous. -/
 lemma continuous_lineLevi : Continuous (lineLevi X) := by
   have h_mat (p : (𝔸 E)ˣ × G E t) : (lineLevi X p).adeleMatrix =
-      X.kAdelic * diagonal (fun _ : Unit ↦ p.1⁻¹.val) * X.kCoord +
-        X.iAdelic * p.2.adeleMatrix * X.iCoord +
-        X.lAdelic * (diagonal fun _ : Unit ↦ p.1.val)ᴴ * X.lCoord := by
-    simp [lineLevi, Splitting.levi, G.adeleMatrix_ofMatrix]
-  simp only [G.continuous_iff, h_mat]
-  fun_prop
+      p.1⁻¹.val • (X.kAdelic * X.kCoord) + X.iAdelic * p.2.adeleMatrix * X.iCoord +
+        star p.1.val • (X.lAdelic * X.lCoord) := by
+    rcases p with ⟨u, g⟩
+    simp only [lineLevi, MonoidHom.comp_apply, MonoidHom.coe_prodMap, Prod.map_apply,
+      invMonoidHom_apply, MonoidHom.id_apply, Splitting.levi, MonoidHom.mk'_apply,
+      G.adeleMatrix_ofMatrix, ← map_inv, inv_inv, GeneralLinearGroup.coe_scalar,
+      Matrix.scalar_apply, diagonal_conjTranspose, Pi.star_def, Matrix.mul_assoc,
+      ← smul_eq_diagonal_mul, Matrix.mul_smul]
+  rw [G.continuous_iff]
+  simp only [h_mat]
+  exact (((Units.continuous_val.comp continuous_inv).comp continuous_fst).smul continuous_const
+    |>.add ((continuous_const.matrix_mul (G.continuous_adeleMatrix.comp continuous_snd)).matrix_mul
+      continuous_const)).add (((Units.continuous_val.comp continuous_fst).star).smul
+        continuous_const)
 
 end
 
@@ -510,12 +645,19 @@ lemma exists_radicalElement_eq_mul_lineLevi {g : G E t'} (hg : g ∈ lineStabili
     -- The block of the rational point `γ` at `V`, in the rational coordinates of `V`.
     let M : Matrix r r E := V.J⁻¹ * X.iᴴ * V'.J * γ.val.val * X.i
     have hM : M.map toAdele = V.x.val * g₀.adeleMatrix * V.x⁻¹.val := by
-      simp [M, ← hγ, iCoord, hg₀, iAdelic, adeleMatrix_ratEmbed, V'.map_J, map_J_inv, Space.ratMap,
-        Matrix.mul_assoc, conjTranspose_map_toAdele]
+      have hx : V'.x.val * (V'.x⁻¹.val * X.i.map toAdele) = X.i.map toAdele := by
+        rw [← Matrix.mul_assoc, Units.mul_inv, Matrix.one_mul]
+      rw [hg₀, ← hγ]
+      simp only [M, iCoord, iAdelic, Space.ratMap, adeleMatrix_ratEmbed, conjTranspose_mul,
+        Matrix.map_mul, conjTranspose_map_toAdele, V.map_J_inv, V'.map_J, Matrix.mul_assoc, hx,
+        Units.mul_inv, Matrix.mul_one]
     exact V.mem_Gamma_iff_range.2 (mem_ratMatrices.1 ⟨M, hM⟩)
   obtain rfl : a = .scalar Unit (ξ.map toAdele.toMonoidHom) := Units.ext ha
   refine ⟨_, ⟨ξ, rfl⟩, g₀⁻¹, inv_mem hg₀_rat, c, b, ?_⟩
-  simp [lineLevi, ← Prod.inv_mk, h_eq]
+  rw [h_eq, mul_assoc, lineLevi]
+  simp only [MonoidHom.comp_apply, MonoidHom.coe_prodMap, Prod.map_apply, invMonoidHom_apply,
+    MonoidHom.id_apply, ← map_mul, Prod.mk_mul_mk, mul_inv_cancel, map_one, Prod.mk_one_one,
+    mul_one]
 
 /-- The radical is compact modulo its intersection with the rational stabiliser of the isotropic
 line of `X`. -/
@@ -563,7 +705,8 @@ lemma exists_integral_lineStabilizer :
   obtain ⟨c, hc, h_unfold⟩ := integral_quotMeasure_iwasawa
     (fun m : (𝔸 E)ˣ × G E t ↦ ideleAbs m.1 ^ (Fintype.card r + 1)) (μ := volume)
     (ν := haar.prod volume) (κ := haar) (i := lineLevi X) (α := _) (hi := continuous_lineLevi X)
-    (hN := isClosed_radicalSubgroup X) (hw := by fun_prop) (hw_pos := by simp [ideleAbs_pos])
+    (hN := isClosed_radicalSubgroup X) (hw := (continuous_ideleAbs.comp continuous_fst).pow _)
+    (hw_pos := fun _ ↦ pow_pos ideleAbs_pos _)
     (h_dec := h_iwasawa) (h_conj := lintegral_radicalHaar_conj_lineLevi X)
     (h_triv := fun _ ↦ eq_one_of_levi_mem_radical X)
     (hδ := .prodMap Subtype.val_injective Subtype.val_injective) (hα := lintegral_levi_unfold)
@@ -572,6 +715,8 @@ lemma exists_integral_lineStabilizer :
   refine ⟨c, hc, fun F hF h_rad h_stab ↦ h_unfold F hF (fun n hn h ↦ ?_) h_stab⟩
   obtain ⟨x, y, rfl⟩ := (mem_radicalSubgroup_iff X n).1 hn
   exact h_rad x y h
+
+open scoped Pointwise
 
 section Lines
 
@@ -624,10 +769,23 @@ lemma lineSum_smul (γ : U V'.J) (y : Submodule E (r' → E)) (h : G E t') :
 
 /-- The sum of the terms along a line is a measurable function of the point `h`. -/
 lemma measurable_lineSum (y : Submodule E (r' → E)) : Measurable (lineSum A a b f g y) := by
+  have h_weil :
+      Continuous fun p : (Matrix n Unit (𝔸 E) × Matrix Unit Unit (𝔸 E)) × G E t' ↦
+        pairWeil W' V' a b (lineRadical A p.1 * g, p.2) f :=
+    (continuous_pairWeil W' V' a b).comp
+      (f := fun p : (Matrix n Unit (𝔸 E) × Matrix Unit Unit (𝔸 E)) × G E t' ↦
+        ((lineRadical A p.1 * g, p.2), f))
+      (((((continuous_lineRadical A).comp continuous_fst).mul continuous_const).prodMk
+        continuous_snd).prodMk continuous_const)
   refine .tsum fun x ↦ ?_
-  simp only [constTermAt_eq_integral A a b]
-  refine StronglyMeasurable.measurable (.integral_prod_left (Continuous.stronglyMeasurable ?_))
-  fun_prop [Splitting.thetaTerm]
+  simp only [constTermAt_eq_integral A a b, Splitting.thetaTerm, rep_apply_apply,
+    Prod.mk_mul_mk, one_mul]
+  have h_cont :
+      Continuous fun p : (Matrix n Unit (𝔸 E) × Matrix Unit Unit (𝔸 E)) × G E t' ↦
+        θ (W.hom V') (A.homSlice V' (V'.x⁻¹.val * (replicateCol Unit x.val).map toAdele)
+          (pairWeil W' V' a b (lineRadical A p.1 * g, p.2) f)) :=
+    (θ (W.hom V')).continuous.comp ((A.homSlice V' _).continuous.comp h_weil)
+  exact StronglyMeasurable.measurable (.integral_prod_left h_cont.stronglyMeasurable)
 
 /-- Moving a datum `f` by an element of the radical of the stabiliser of the isotropic line of `X`
 in the Weil representation `pairWeil` does not change `lineTerm A X true ξ f`, the zero term along
@@ -638,14 +796,17 @@ lemma lineTerm_pairWeil_radicalElement (ξ : 𝔸 E) (x : Matrix r Unit (𝔸 E)
       lineTerm A X true ξ f := by
   -- Move `X.radicalElement x y` through `A.homSlice`, where it fixes `X.kAdelic`, and through the
   -- zero term along `X`, where its Levi part is `(1, 1)`.
-  have h_char (c : AutChar E) : c / upsilonU1 * upsilonU1 ^ Fintype.card Unit = c := by simp
+  have h_char (c : AutChar E) : c / upsilonU1 * upsilonU1 ^ Fintype.card Unit = c := by
+    rw [Fintype.card_unique, pow_one, div_mul_cancel]
   have h_source (z : Matrix r' Unit (𝔸 E)) :
       A.homSlice V' z (pairWeil W' V' a b (1, X.radicalElement x y) f) =
         pairWeil W V' (a / upsilonU1) b (1, X.radicalElement x y)
           (A.homSlice V' ((X.radicalElement x y)⁻¹.adeleMatrix * z) f) := by
     have h_levi := A.homSlice_levi V' (a / upsilonU1) b 1 1 (X.radicalElement x y) z f
-    rw [h_char, Prod.mk_one_one, map_one] at h_levi
-    simp [h_levi]
+    rw [h_char, Prod.mk_one_one, map_one, map_one, map_one, Circle.coe_one, inv_one,
+      map_one, Real.sqrt_one, Complex.ofReal_one, one_pow, mul_one, one_smul, Units.val_one,
+      Matrix.mul_one] at h_levi
+    exact h_levi
   obtain ⟨h_frame, h_block⟩ : X.ActsOnFrame (X.radicalElement x y) 1 ∧
       X.iCoord * ((X.radicalElement x y).adeleMatrix * X.iAdelic) = 1 :=
     X.exists_eq_radicalElement_iff.1 ⟨x, y, rfl⟩
@@ -654,9 +815,12 @@ lemma lineTerm_pairWeil_radicalElement (ξ : 𝔸 E) (x : Matrix r Unit (𝔸 E)
         (X.homTarget W).zeroTerm f' := by
     have h_law := X.homTarget_zeroTerm_pairWeil W a' (b / upsilonU1) (X.radicalElement x y) 1 1
       h_frame (h_block.trans G.adeleMatrix_one.symm) 1 f'
-    rw [h_char] at h_law
-    simp [h_law, Prod.mk_one_one]
-  simp [lineTerm, h_source, h_zero, radicalElement_inv, actsOnFrame_radicalElement]
+    rw [h_char, map_one, map_one, Circle.coe_one, map_one, Real.sqrt_one, Complex.ofReal_one,
+      one_pow, mul_one, one_smul, Prod.mk_one_one, map_one, one_apply_eq_self] at h_law
+    exact h_law
+  have h_fix : (X.radicalElement x y)⁻¹.adeleMatrix * (ξ • X.kAdelic) = ξ • X.kAdelic := by
+    rw [Matrix.mul_smul, radicalElement_inv, X.actsOnFrame_radicalElement, Matrix.mul_one]
+  simp only [lineTerm, ↓reduceIte, ContinuousLinearMap.comp_apply, h_source, h_zero, h_fix]
 
 /-- Suppose the term `constTermAt A 0` of the zero vector in the constant term of
 `pairWeil W' V' a b (g, h) f` vanishes. Suppose also that the subspace `y` has nonzero `lineSum`,
